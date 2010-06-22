@@ -12,11 +12,9 @@
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
  *
-<<<<<<< HEAD
  * Author: Mike Chan (mike@android.com) - modified for suspend/wake by imoseyon
-=======
  * Author: Mike Chan (mike@android.com)
->>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
+ * Author: Mike Chan (mike@android.com)
  *
  */
 
@@ -29,7 +27,10 @@
 #include <linux/timer.h>
 #include <linux/workqueue.h>
 <<<<<<< HEAD
+<<<<<<< HEAD
 #include <linux/earlysuspend.h>
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 
@@ -57,6 +58,7 @@ static u64 freq_change_time_in_idle;
 static cpumask_t work_cpumask;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 static unsigned int suspended = 0;
 static unsigned int enabled = 0;
 
@@ -64,6 +66,8 @@ static unsigned int suspendfreq = 480000;
 
 static unsigned int samples = 0;
 
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 /*
@@ -74,9 +78,12 @@ static unsigned int samples = 0;
 static unsigned long min_sample_time;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 static unsigned int freq_threshold = 806400;
 static unsigned int resume_speed = 806400;
 
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
@@ -87,7 +94,11 @@ static
 #endif
 struct cpufreq_governor cpufreq_gov_interactive = {
 <<<<<<< HEAD
+<<<<<<< HEAD
 	.name = "InteractiveX",
+=======
+	.name = "interactive",
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 	.name = "interactive",
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
@@ -125,6 +136,7 @@ static void cpufreq_interactive_timer(unsigned long data)
 			return;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 		// imoseyon - when over 1.8Ghz jump less
 		if (policy->max > freq_threshold) {
 			if (samples > 0) {
@@ -139,12 +151,19 @@ static void cpufreq_interactive_timer(unsigned long data)
 =======
 		target_freq = policy->max;
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
+=======
+		target_freq = policy->max;
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 		cpumask_set_cpu(data, &work_cpumask);
 		queue_work(up_wq, &freq_scale_work);
 		return;
 	}
 <<<<<<< HEAD
+<<<<<<< HEAD
 	samples = 0; // reset sample counter
+=======
+
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
@@ -210,7 +229,10 @@ static unsigned int cpufreq_interactive_calc_freq(unsigned int cpu)
 	unsigned int idle_time;
 	unsigned int cpu_load;
 <<<<<<< HEAD
+<<<<<<< HEAD
 	unsigned int newfreq;
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 	u64 current_wall_time;
@@ -224,9 +246,13 @@ static unsigned int cpufreq_interactive_calc_freq(unsigned int cpu)
 	cpu_load = 100 * (delta_time - idle_time) / delta_time;
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	newfreq = policy->cur * cpu_load / 100;	
 
 	return newfreq;
+=======
+	return policy->cur * cpu_load / 100;
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 	return policy->cur * cpu_load / 100;
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
@@ -239,6 +265,7 @@ static void cpufreq_interactive_freq_change_time_work(struct work_struct *work)
 	unsigned int cpu;
 	cpumask_t tmp_mask = work_cpumask;
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 	for_each_cpu(cpu, tmp_mask) {
 		if (!suspended && (target_freq >= freq_threshold || target_freq == policy->max) ) {
@@ -250,10 +277,15 @@ static void cpufreq_interactive_freq_change_time_work(struct work_struct *work)
 	for_each_cpu(cpu, tmp_mask) {
 		if (target_freq == policy->max) {
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
+=======
+	for_each_cpu(cpu, tmp_mask) {
+		if (target_freq == policy->max) {
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 			if (nr_running() == 1) {
 				cpumask_clear_cpu(cpu, &work_cpumask);
 				return;
 			}
+<<<<<<< HEAD
 <<<<<<< HEAD
 			__cpufreq_driver_target(policy, target_freq, CPUFREQ_RELATION_H);
 		} else {
@@ -273,6 +305,8 @@ static void cpufreq_interactive_freq_change_time_work(struct work_struct *work)
 	  freq_change_time_in_idle = get_cpu_idle_time_us(cpu, &freq_change_time);
 	  cpumask_clear_cpu(cpu, &work_cpumask);
 =======
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 
 			__cpufreq_driver_target(policy, target_freq,
 					CPUFREQ_RELATION_H);
@@ -285,6 +319,9 @@ static void cpufreq_interactive_freq_change_time_work(struct work_struct *work)
 							&freq_change_time);
 
 		cpumask_clear_cpu(cpu, &work_cpumask);
+<<<<<<< HEAD
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
+=======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 	}
 
@@ -316,6 +353,7 @@ static struct attribute_group interactive_attr_group = {
 	.name = "interactive",
 };
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 static void interactive_suspend(int suspend)
 {
@@ -351,6 +389,8 @@ static struct early_suspend interactive_power_suspend = {
 
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 static int cpufreq_governor_interactive(struct cpufreq_policy *new_policy,
 		unsigned int event)
 {
@@ -376,10 +416,13 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *new_policy,
 		pm_idle = cpufreq_idle;
 		policy = new_policy;
 <<<<<<< HEAD
+<<<<<<< HEAD
 		enabled = 1;
 
         	register_early_suspend(&interactive_power_suspend);
         	pr_info("[imoseyon] interactive start - freq_threshold at %d, resume at %d\n", freq_threshold, resume_speed);
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 		break;
@@ -394,9 +437,12 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *new_policy,
 		pm_idle = pm_idle_old;
 		del_timer(&per_cpu(cpu_timer, new_policy->cpu));
 <<<<<<< HEAD
+<<<<<<< HEAD
 		enabled = 0;
         	unregister_early_suspend(&interactive_power_suspend);
         	pr_info("[imoseyon] interactive inactive\n");
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 			break;
@@ -434,7 +480,10 @@ static int __init cpufreq_interactive_init(void)
 	INIT_WORK(&freq_scale_work, cpufreq_interactive_freq_change_time_work);
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         pr_info("[imoseyon] interactive enter\n");
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 	return cpufreq_register_governor(&cpufreq_gov_interactive);
@@ -449,7 +498,10 @@ module_init(cpufreq_interactive_init);
 static void __exit cpufreq_interactive_exit(void)
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
         pr_info("[imoseyon] interactive exit\n");
+=======
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 >>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 	cpufreq_unregister_governor(&cpufreq_gov_interactive);

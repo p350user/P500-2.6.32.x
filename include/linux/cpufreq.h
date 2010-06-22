@@ -333,6 +333,7 @@ extern struct cpufreq_governor cpufreq_gov_ondemand;
 extern struct cpufreq_governor cpufreq_gov_conservative;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_conservative)
 <<<<<<< HEAD
+<<<<<<< HEAD
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_SMARTASS)
 extern struct cpufreq_governor cpufreq_gov_smartass;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_smartass)
@@ -348,6 +349,11 @@ extern struct cpufreq_governor cpufreq_gov_interactivex;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_SAVAGEDZEN)
 extern struct cpufreq_governor cpufreq_gov_savagedzen;
 #define CPUFREQ_DEFAULT_GOVERNOR (&cpufreq_gov_savagedzen)
+=======
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE)
+extern struct cpufreq_governor cpufreq_gov_interactive;
+#define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_interactive)
+>>>>>>> 324ca32... cpufreq: interactive: New 'interactive' governor
 =======
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE)
 extern struct cpufreq_governor cpufreq_gov_interactive;
