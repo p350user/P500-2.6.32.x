@@ -30,35 +30,35 @@
 #include <asm/div64.h>
 
 enum vr_data_dir {
-ASYNC,
-SYNC,
+	ASYNC,
+	SYNC,
 };
 
 enum vr_head_dir {
-FORWARD,
-BACKWARD,
+	FORWARD,
+	BACKWARD,
 };
 
-static const int sync_expire = HZ / 2; /* max time before a sync is submitted. */
+static const int sync_expire = HZ / 2;  /* max time before a sync is submitted. */
 static const int async_expire = 5 * HZ; /* ditto for async, these limits are SOFT! */
 static const int fifo_batch = 16;
-static const int rev_penalty = 10; /* penalty for reversing head direction */
+static const int rev_penalty = 10;	/* penalty for reversing head direction */
 
 struct vr_data {
-struct rb_root sort_list;
-struct list_head fifo_list[2];
+	struct rb_root sort_list;
+	struct list_head fifo_list[2];
 
-struct request *next_rq;
-struct request *prev_rq;
+	struct request *next_rq;
+	struct request *prev_rq;
 
-unsigned int nbatched;
-sector_t last_sector; /* head position */
-int head_dir;
+	unsigned int nbatched;
+	sector_t last_sector;		/* head position */
+	int head_dir;
 
-/* tunables */
-int fifo_expire[2];
-int fifo_batch;
-int rev_penalty;
+	/* tunables */
+	int fifo_expire[2];
+	int fifo_batch;
+	int rev_penalty;
 };
 
 static void vr_move_request(struct vr_data *, struct request *);
@@ -66,7 +66,7 @@ static void vr_move_request(struct vr_data *, struct request *);
 static inline struct vr_data *
 vr_get_data(struct request_queue *q)
 {
-return q->elevator->elevator_data;
+	return q->elevator->elevator_data;
 }
 
 static void
@@ -280,6 +280,7 @@ if (next_pen <= prev_pen)
 return next;
 
 return prev;
+
 }
 
 static int
@@ -444,4 +445,3 @@ module_exit(vr_exit);
 MODULE_AUTHOR("Aaron Carroll");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("V(R) IO scheduler");
-
