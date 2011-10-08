@@ -1,7 +1,7 @@
 /*
  * Automatically generated C config: don't edit
  * Linux kernel version: 2.6.32.46
- * Fri Oct  7 00:08:16 2011
+ * Sat Oct  8 18:06:37 2011
  */
 #define AUTOCONF_INCLUDED
 #define CONFIG_ANDROID 1
@@ -410,7 +410,6 @@
 #define CONFIG_VMALLOC_RESERVE 0x08000000
 #define CONFIG_MSM_N_WAY_SMSM 1
 #define CONFIG_TMPFS 1
-#define CONFIG_SCHED_HRTICK 1
 #define CONFIG_GENERIC_TIME 1
 #define CONFIG_GENERIC_GPIO 1
 #define CONFIG_CRYPTO_TWOFISH_COMMON 1
