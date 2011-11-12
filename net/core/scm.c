@@ -77,11 +77,13 @@ static int scm_fp_copy(struct cmsghdr *cmsg, struct scm_fp_list **fplp)
 		if (!fpl)
 			return -ENOMEM;
 		*fplp = fpl;
+		INIT_LIST_HEAD(&fpl->list);
 		fpl->count = 0;
+		fpl->max = SCM_MAX_FD;
 	}
 	fpp = &fpl->fp[fpl->count];
 
-	if (fpl->count + num > SCM_MAX_FD)
+	if (fpl->count + num > fpl->max)
 		return -EINVAL;
 
 	/*
@@ -302,11 +304,13 @@ struct scm_fp_list *scm_fp_dup(struct scm_fp_list *fpl)
 	if (!fpl)
 		return NULL;
 
-	new_fpl = kmalloc(sizeof(*fpl), GFP_KERNEL);
+        new_fpl = kmemdup(fpl, offsetof(struct scm_fp_list, fp[fpl->count]),
+                          GFP_KERNEL);
 	if (new_fpl) {
-		for (i=fpl->count-1; i>=0; i--)
+		INIT_LIST_HEAD(&new_fpl->list);
+		for (i = 0; i < fpl->count; i++)
 			get_file(fpl->fp[i]);
-		memcpy(new_fpl, fpl, sizeof(*fpl));
+		new_fpl->max = new_fpl->count;
 	}
 	return new_fpl;
 }
