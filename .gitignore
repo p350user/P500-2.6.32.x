@@ -54,6 +54,7 @@ modules.builtin
 #
 # Generated include files
 #
+config-gbs.*
 include/config
 include/linux/version.h
 include/generated
