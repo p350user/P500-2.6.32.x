@@ -221,7 +221,7 @@ struct p9_req_t *p9_tag_lookup(struct p9_client *c, u16 tag)
 	 * buffer to read the data into */
 	tag++;
 
-        BUG_ON(tag >= c->max_tag)
+	BUG_ON(tag >= c->max_tag);
 
 	row = tag / P9_ROW_MAXTAG;
 	col = tag % P9_ROW_MAXTAG;
@@ -697,8 +697,8 @@ struct p9_client *p9_client_create(const char *dev_name, char *options)
 	if (err)
 		goto error;
 
-        if ((clnt->msize+P9_IOHDRSZ) > clnt->trans_mod->maxsize)
-                clnt->msize = clnt->trans_mod->maxsize-P9_IOHDRSZ;
+	if ((clnt->msize+P9_IOHDRSZ) > clnt->trans_mod->maxsize)
+		clnt->msize = clnt->trans_mod->maxsize-P9_IOHDRSZ;
 
 	err = p9_client_version(clnt);
 	if (err)

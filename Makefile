@@ -525,7 +525,20 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS  += -O2
+-pipe \
+-marm \
+-march=armv6zk \
+-mtune=arm1176jzf-s \
+-mfpu=vfp \
+-funsafe-loop-optimizations \
+-funroll-loops \
+-mfloat-abi=softfp \
+-fomit-frame-pointer \
+-D__ARM_ARCH_5__ \
+-D__ARM_ARCH_5T__ \
+-D__ARM_ARCH_5E__ \
+-D__ARM_ARCH_5TE__
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
