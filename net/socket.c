@@ -1066,21 +1066,66 @@ static int sock_close(struct inode *inode, struct file *filp)
 
 static int sock_fasync(int fd, struct file *filp, int on)
 {
-	struct socket *sock = filp->private_data;
-  	struct sock *sk = sock->sk;
+	struct fasync_struct *fa, *fna = NULL, **prev;
+	struct socket *sock;
+	struct sock *sk;
 
-	if (sk == NULL)
+	if (on) {
+		fna = kmalloc(sizeof(struct fasync_struct), GFP_KERNEL);
+		if (fna == NULL)
+			return -ENOMEM;
+	}
+
+	sock = filp->private_data;
+
+	sk = sock->sk;
+	if (sk == NULL) {
+		kfree(fna);
 		return -EINVAL;
+	}
 
 	lock_sock(sk);
 
-	fasync_helper(fd, filp, on, &sock->fasync_list);
-
-	if (!sock->fasync_list)
-    		sock_reset_flag(sk, SOCK_FASYNC);
+	spin_lock(&filp->f_lock);
+	if (on)
+		filp->f_flags |= FASYNC;
 	else
+		filp->f_flags &= ~FASYNC;
+	spin_unlock(&filp->f_lock);
 
-	release_sock(sk);
+	prev = &(sock->fasync_list);
+
+	for (fa = *prev; fa != NULL; prev = &fa->fa_next, fa = *prev)
+		if (fa->fa_file == filp)
+			break;
+
+	if (on) {
+		if (fa != NULL) {
+			write_lock_bh(&sk->sk_callback_lock);
+			fa->fa_fd = fd;
+			write_unlock_bh(&sk->sk_callback_lock);
+
+			kfree(fna);
+			goto out;
+		}
+		fna->fa_file = filp;
+		fna->fa_fd = fd;
+		fna->magic = FASYNC_MAGIC;
+		fna->fa_next = sock->fasync_list;
+		write_lock_bh(&sk->sk_callback_lock);
+		sock->fasync_list = fna;
+		write_unlock_bh(&sk->sk_callback_lock);
+	} else {
+		if (fa != NULL) {
+			write_lock_bh(&sk->sk_callback_lock);
+			*prev = fa->fa_next;
+			write_unlock_bh(&sk->sk_callback_lock);
+			kfree(fa);
+		}
+	}
+
+out:
+	release_sock(sock->sk);
 	return 0;
 }
 
@@ -1101,10 +1146,10 @@ int sock_wake_async(struct socket *sock, int how, int band)
 		/* fall through */
 	case SOCK_WAKE_IO:
 call_kill:
-		kill_fasync(sock->fasync_list, SIGIO, band);
+		__kill_fasync(sock->fasync_list, SIGIO, band);
 		break;
 	case SOCK_WAKE_URG:
-		kill_fasync(sock->fasync_list, SIGURG, band);
+		__kill_fasync(sock->fasync_list, SIGURG, band);
 	}
 	return 0;
 }
