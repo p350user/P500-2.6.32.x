@@ -95,6 +95,7 @@ struct touch_platform_data {
 	int ts_y_min;
 	int ts_y_max;
 	int (*power)(unsigned char onoff);
+	int (*pulldown)(int onoff);
 	int irq;
 	int scl;
 	int sda;
