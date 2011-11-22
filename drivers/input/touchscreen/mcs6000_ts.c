@@ -25,7 +25,6 @@
 #include <linux/delay.h>
 #include <linux/workqueue.h>
 #include <linux/slab.h>
-
 #include <linux/i2c.h>
 #include <linux/gpio.h>
 #include <linux/input.h>
@@ -54,12 +53,6 @@ static void mcs6000_early_suspend(struct early_suspend *h);
 static void mcs6000_late_resume(struct early_suspend *h);
 #endif
 
-#define TS_SAMPLERATE_HZ 100
-
-#define LG_FW_MULTI_TOUCH
-#define LG_FW_TOUCH_SOFT_KEY		1
-#define TOUCH_SEARCH			247
-#define TOUCH_BACK  			248
 #define MCS6000_I2C_TS_NAME		"touch_mcs6000"
 #define ON 				1
 #define OFF 				0
@@ -88,20 +81,9 @@ module_param_named(debug_mask, mcs6000_debug_mask, int,
 			fmt, __FUNCTION__, __LINE__, ##args);
 
 #define MCS6000_TS_INPUT_INFO					0x10
-#define MCS6000_TS_XY_HIGH					0x11
-#define MCS6000_TS_X_LOW					0x12
-#define MCS6000_TS_Y_LOW					0x13
-#define MCS6000_TS_Z			 			0x14
-#define MCS6000_TS_XY2_HIGH			 		0x15
-#define MCS6000_TS_X2_LOW				 	0x16
-#define MCS6000_TS_Y2_LOW					0x17
-#define MCS6000_TS_Z2		 				0x18
-#define MCS6000_TS_KEY_STRENGTH  				0x19
 #define MCS6000_TS_FW_VERSION			 		0x20
 #define MCS6000_TS_HW_REVISION					0x21
 
-#define MCS6000_TS_MAX_HW_VERSION				0x40
-#define MCS6000_TS_MAX_FW_VERSION				0x20
 
 static struct workqueue_struct *mcs6000_wq;
 
@@ -140,14 +122,6 @@ enum {
 };
 
 enum {
-	NO_KEY_TOUCHED,
-	KEY1_TOUCHED,
-	KEY2_TOUCHED,
-	KEY3_TOUCHED,
-	MAX_KEY_TOUCH
-};
-
-enum {
 	MCS6000_DEV_NORMAL,
 	MCS6000_DEV_SUSPEND,
 	MCS6000_DEV_DOWNLOAD
@@ -171,7 +145,6 @@ void Send_Touch( unsigned int x, unsigned int y)
 }
 EXPORT_SYMBOL(Send_Touch);
 
-#ifdef LG_FW_MULTI_TOUCH
 static __inline void mcs6000_multi_ts_event_touch(int x1, int y1, int x2, int y2, int value,
 		struct mcs6000_ts_data *ts)
 {
@@ -206,60 +179,20 @@ static __inline void mcs6000_multi_ts_event_touch(int x1, int y1, int x2, int y2
 	return;
 }
 
-#else
-
-static __inline void mcs6000_single_ts_event_touch(unsigned int x, unsigned int y, int value,
-		struct mcs6000_ts_data *ts)
-{
-	int report = 0;
-
-	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
-		DMSG("\n");
-
-	if ((x >= 0) && (y >= 0)) {
-		input_report_abs(ts->input_dev, ABS_X, x);
-		input_report_abs(ts->input_dev, ABS_Y, y);
-		reprot = 1;
-	}
-
-	if (report != 0) {
-		input_report_key(ts->input_dev, BTN_TOUCH, value);
-		input_sync(ts->input_dev);
-	} 
-	else {
-		if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
-			DMSG("Not available touch data x=%d, y=%d\n", x, y);
-	}
-
-	return;
-}
-
-static __inline void mcs6000_single_ts_event_release(struct mcs6000_ts_data *ts)
-{
-	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
-		DMSG("\n");
-
-	input_sync(ts->input_dev);
-
-	return;
-}
-#endif /* end of LG_FW_MULTI_TOUCH */
-
 #define to_delayed_work(_work)		container_of(_work, struct delayed_work, work)
 
 static void mcs6000_ts_work_func(struct work_struct *work)
 {
-	int x1 = 0, y1 = 0;
-#ifdef LG_FW_MULTI_TOUCH
-	int x2 = 0, y2 = 0;
+	static int x1 = 0, y1 = 0;
+	static int x2 = 0, y2 = 0;
 	static int pre_x1, pre_x2, pre_y1, pre_y2;
 	static unsigned int s_input_type = NON_TOUCHED_STATE;
 	static int flipy=0;
 	static int flipx=0;
 	static int canFlipX=1;
 	static int canFlipY=1;
+	static int axishack=100;
 
-#endif
 	unsigned int input_type;
 	unsigned char read_buf[READ_NUM];
 
@@ -267,42 +200,34 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 
 	struct mcs6000_ts_data *ts = container_of(to_delayed_work(work), struct mcs6000_ts_data, work);
 
-	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
-		DMSG("\n");
-
 	ts->pendown = !gpio_get_value(ts->intr_gpio);
 
 	/* read the registers of MCS6000 IC */
 	if (i2c_smbus_read_i2c_block_data(ts->client, MCS6000_TS_INPUT_INFO, READ_NUM, read_buf) < 0) {
 		printk(KERN_ERR "%s touch ic read error\n", __FUNCTION__);
+		msleep(2);
 		goto touch_retry;
 	}
 
 	input_type = read_buf[0] & 0x0f;
 
-	x1 = (read_buf[1] & 0xf0) << 4;
-	y1 = (read_buf[1] & 0x0f) << 8;
+	x1 = (((read_buf[1] & 0xf0) << 4) | read_buf[2]);
+	y1 = (((read_buf[1] & 0x0f) << 8) | read_buf[3]);
 
-	x1 |= read_buf[2];	
-	y1 |= read_buf[3];
-		
-
-#ifdef LG_FW_MULTI_TOUCH
 	if (input_type == MULTI_POINT_TOUCH) {
 		s_input_type = input_type;
-		x2 = (read_buf[5] & 0xf0) << 4;
-		y2 = (read_buf[5] & 0x0f) << 8;
-		x2 |= read_buf[6];
-		y2 |= read_buf[7];
-		
-		if ( (canFlipX) && (abs(y1-y2) <= 40) )
+
+		x2 = (((read_buf[5] & 0xf0) << 4) | read_buf[6]);
+		y2 = (((read_buf[5] & 0x0f) << 8) | read_buf[7]);
+
+/*		if ( (canFlipX) && (abs(y1-y2) <= axishack) )
 			{
 				// set flip flag
 				flipx=!flipx;
 				// stop calculation until points drive away from each other
 				canFlipX=0;
 			}
-		if ( (canFlipY) && (abs(x1-x2) <= 40) )
+		if ( (canFlipY) && (abs(x1-x2) <= axishack) )
 			{
 				// set flip flag
 				flipy=!flipy;
@@ -318,16 +243,22 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			swap(y1,y2);
 
 		// when points drive away from each other, reactivate the checks
-		if(abs(y1-y2) > 40)
+		if(abs(y1-y2) > axishack)
 			canFlipX = 1;
-		if(abs(x1-x2) > 40)
+		if(abs(x1-x2) > axishack)
 			canFlipY = 1; 
+*/
 	}
-#endif
+	else
+        {
+        	// single touch -> reset flags check on axis inversion workaround
+//                canFlipY = canFlipX = 1;
+//                flipx = flipy = 0;
+        }
+
 	if (input_type) {
 		touch_pressed = 1;
 
-#ifdef LG_FW_MULTI_TOUCH
 		if (input_type == MULTI_POINT_TOUCH) {
 			mcs6000_multi_ts_event_touch(x1, y1, x2, y2, PRESSED, ts);
 			pre_x1 = x1;
@@ -338,17 +269,11 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			mcs6000_multi_ts_event_touch(x1, y1, -1, -1, PRESSED, ts);
 			s_input_type = SINGLE_POINT_TOUCH;				
 		}
-#else
-		if (input_type == SINGLE_POINT_TOUCH) {
-			mcs6000_single_ts_event_touch(x1, y1, PRESSED, ts);
-		}
-#endif				
 	} else { /* touch released case */
-		canFlipY = canFlipX = 1;
-		flipx = flipy = 0;
+//		canFlipY = canFlipX = 1;
+//		flipx = flipy = 0;
 
 		if (touch_pressed) {
-#ifdef LG_FW_MULTI_TOUCH
 			if (s_input_type == MULTI_POINT_TOUCH) {
 				if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 					DMSG("multi touch release...(%d, %d), (%d, %d)\n", pre_x1,pre_y1,pre_x2,pre_y2);
@@ -362,13 +287,6 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 
 				mcs6000_multi_ts_event_touch(x1, y1, -1, -1, RELEASED, ts);
 			}
-#else
-			if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
-				DMSG("single release... %d, %d\n", x1, y1);
-
-			mcs6000_single_ts_event_touch (x1, y1, RELEASED, ts);
-			touch_pressed = 0;
-#endif
 		}
 	}
 
@@ -517,110 +435,10 @@ static __inline int mcs6000_ioctl_down_i2c_read(struct file *file, unsigned char
 	return err;
 }
 
+
 int mcs6000_ts_ioctl_down(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
-	int err = 0;
-	/* FIXME: */
-#if 0
-	struct mcs6000_ts_data *ts = file->private_data;
-	struct mcs6000_ts_down_ioctl_i2c_type client_data;
-
-	if (MCS6000_DM_TRACE_FUNC & mcs6000_debug_mask)
-		DMSG("\n");
-
-	if (_IOC_NR(cmd) >= MCS6000_TS_DOWN_IOCTL_MAXNR)
-		return -EINVAL;
-	
-	switch (cmd) {
-		case MCS6000_TS_DOWN_IOCTL_VDD_HIGH:
-			err = ts->power(1);
-			if (err < 0)
-				printk(KERN_INFO "mcs6000_ts_ioctl_down: Power up failed\n");
-			break;
-		case MCS6000_TS_DOWN_IOCTL_VDD_LOW:
-			err = ts->power(0);
-			if (err < 0)
-				printk(KERN_INFO "mcs6000_ts_ioctl_down: Power down failed\n");
-			break;
-		case MCS6000_TS_DOWN_IOCTL_INTR_HIGH:
-			gpio_direction_output(ts->intr_gpio, GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_HIGH);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_INTR_LOW:
-			gpio_direction_output(ts->intr_gpio, GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_INTR_OUT:
-			gpio_direction_output(ts->intr_gpio, GPIOF_DRIVE_OUTPUT);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_INTR_IN:
-			gpio_direction_output(ts->intr_gpio, GPIOF_INPUT);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_SCL_HIGH:
-			gpio_direction_output(ts->scl_gpio, GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_HIGH);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_SCL_LOW:
-			gpio_direction_output(ts->scl_gpio, GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_SDA_HIGH:
-			gpio_direction_output(ts->sda_gpio, GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_HIGH);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_SDA_LOW:
-			gpio_direction_output(ts->sda_gpio, GPIOF_DRIVE_OUTPUT | GPIOF_OUTPUT_LOW);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_SCL_OUT:
-			gpio_direction_output(ts->scl_gpio, GPIOF_DRIVE_OUTPUT);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_SDA_OUT:
-			gpio_direction_output(ts->sda_gpio, GPIOF_DRIVE_OUTPUT);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_I2C_ENABLE:
-			//mcs6000_ts_down_i2c_block_enable(1);
-			break;
-		case MCS6000_TS_DOWN_IOCTL_I2C_DISABLE:
-			//mcs6000_ts_down_i2c_block_enable(0);
-			break;
-
-		case MCS6000_TS_DOWN_IOCTL_I2C_READ:
-			if (copy_from_user(&client_data, (struct mcs6000_ts_down_ioctl_i2c_type *)arg,
-						sizeof(struct mcs6000_ts_down_ioctl_i2c_type))) {
-				printk(KERN_INFO "mcs6000_ts_ioctl_down: copyfromuser-read error\n");
-				return -EFAULT;
-			}
-
-			if (0 > mcs6000_ioctl_down_i2c_read(file, (unsigned char)client_data.addr,
-						(unsigned char *)&client_data.data)) {
-				err = -EIO;
-			}
-
-			if (copy_to_user((void *)arg, (const void *)&client_data,
-						sizeof(struct mcs6000_ts_down_ioctl_i2c_type))) {
-				printk(KERN_INFO "mcs6000_ts_ioctl_down: copytouser-read error\n");
-				err = -EFAULT;
-			}
-			break;
-		case MCS6000_TS_DOWN_IOCTL_I2C_WRITE:
-			if (copy_from_user(&client_data, (struct mcs6000_ts_down_ioctl_i2c_type *)arg,
-						sizeof(struct mcs6000_ts_down_ioctl_i2c_type))) {
-				printk(KERN_INFO "mcs6000_ts_ioctl_down: copyfromuser-write error\n");
-				return -EFAULT;
-			}
-
-			if (0 > mcs6000_ioctl_down_i2c_write(file, (unsigned char)client_data.addr,
-						(unsigned char)client_data.data)) {
-				err = -EIO;
-			}
-			break;
-		case MCS6000_TS_DOWN_IOCTL_SELECT_TS_TYPE:
-			break;
-		default:
-			err = -EINVAL;
-			break;
-	}
-#endif
-
-	if (err < 0)
-		printk(KERN_ERR "\n==== Touch DONW IOCTL Fail....%d\n",_IOC_NR(cmd));
-
-	return err;
+return 0;
 }
 
 static int mcs6000_ioctl(struct inode *inode, struct file *file,
@@ -1069,20 +887,11 @@ static int mcs6000_ts_probe(struct i2c_client *client, const struct i2c_device_i
 
 	set_bit(EV_SYN, ts->input_dev->evbit);
 	set_bit(EV_ABS, ts->input_dev->evbit);
-#ifdef LG_FW_MULTI_TOUCH
 	set_bit(ABS_MT_TOUCH_MAJOR, ts->input_dev->absbit);
 	set_bit(ABS_MT_POSITION_X, ts->input_dev->absbit);
 	set_bit(ABS_MT_POSITION_Y, ts->input_dev->absbit);
-#else
-	set_bit(BTN_TOUCH, ts->input_dev->keybit);
-#endif
-#ifdef LG_FW_MULTI_TOUCH
 	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_X, pdata->ts_x_min, pdata->ts_x_max, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_Y, pdata->ts_y_min, pdata->ts_y_max, 0, 0);
-#else	
-	input_set_abs_params(ts->input_dev, ABS_X, pdata->ts_x_min, pdata->ts_x_max, 0, 0);
-	input_set_abs_params(ts->input_dev, ABS_Y, pdata->ts_y_min, pdata->ts_y_max, 0, 0);
-#endif
 
 	ret = input_register_device(ts->input_dev);
 	if (ret < 0) {
