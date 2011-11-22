@@ -157,17 +157,17 @@ enum {
 /* [FIXME temporary code] copy form VS740 by younchan.kim 2010-06-11 */
 void Send_Touch( unsigned int x, unsigned int y)
 {
-  input_report_abs(mcs6000_ts_dev.input_dev, ABS_MT_TOUCH_MAJOR, 1);
-  input_report_abs(mcs6000_ts_dev.input_dev, ABS_MT_POSITION_X, x);
-  input_report_abs(mcs6000_ts_dev.input_dev, ABS_MT_POSITION_Y, y);
-  input_mt_sync(mcs6000_ts_dev.input_dev);
-  input_sync(mcs6000_ts_dev.input_dev);
+  input_report_abs(mcs6000_ext_ts->input_dev, ABS_MT_TOUCH_MAJOR, 1);
+  input_report_abs(mcs6000_ext_ts->input_dev, ABS_MT_POSITION_X, x);
+  input_report_abs(mcs6000_ext_ts->input_dev, ABS_MT_POSITION_Y, y);
+  input_mt_sync(mcs6000_ext_ts->input_dev);
+  input_sync(mcs6000_ext_ts->input_dev);
 
-  input_report_abs(mcs6000_ts_dev.input_dev, ABS_MT_TOUCH_MAJOR, 0);
-  input_report_abs(mcs6000_ts_dev.input_dev, ABS_MT_POSITION_X, x);
-  input_report_abs(mcs6000_ts_dev.input_dev, ABS_MT_POSITION_Y, y);
-  input_mt_sync(mcs6000_ts_dev.input_dev);
-  input_sync(mcs6000_ts_dev.input_dev);
+  input_report_abs(mcs6000_ext_ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);
+  input_report_abs(mcs6000_ext_ts->input_dev, ABS_MT_POSITION_X, x);
+  input_report_abs(mcs6000_ext_ts->input_dev, ABS_MT_POSITION_Y, y);
+  input_mt_sync(mcs6000_ext_ts->input_dev);
+  input_sync(mcs6000_ext_ts->input_dev);
 }
 EXPORT_SYMBOL(Send_Touch);
 
