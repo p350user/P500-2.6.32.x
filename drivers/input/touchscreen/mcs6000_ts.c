@@ -3,7 +3,8 @@
  *
  * Copyright (C) 2010 LGE, Inc.
  * Modifier: Sungyoung Lee [sungyoung.lee@lge.com]
- *
+ * Modifier: Gerson Barreiros [fserve@gmail.com]
+ * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -220,7 +221,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 		x2 = (((read_buf[5] & 0xf0) << 4) | read_buf[6]);
 		y2 = (((read_buf[5] & 0x0f) << 8) | read_buf[7]);
 
-/*		if ( (canFlipX) && (abs(y1-y2) <= axishack) )
+		if ( (canFlipX) && (abs(y1-y2) <= axishack) )
 			{
 				// set flip flag
 				flipx=!flipx;
@@ -247,13 +248,13 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			canFlipX = 1;
 		if(abs(x1-x2) > axishack)
 			canFlipY = 1; 
-*/
+
 	}
 	else
         {
         	// single touch -> reset flags check on axis inversion workaround
-//                canFlipY = canFlipX = 1;
-//                flipx = flipy = 0;
+                canFlipY = canFlipX = 1;
+                flipx = flipy = 0;
         }
 
 	if (input_type) {
@@ -270,8 +271,8 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			s_input_type = SINGLE_POINT_TOUCH;				
 		}
 	} else { /* touch released case */
-//		canFlipY = canFlipX = 1;
-//		flipx = flipy = 0;
+		canFlipY = canFlipX = 1;
+		flipx = flipy = 0;
 
 		if (touch_pressed) {
 			if (s_input_type == MULTI_POINT_TOUCH) {
@@ -434,7 +435,6 @@ static __inline int mcs6000_ioctl_down_i2c_read(struct file *file, unsigned char
 
 	return err;
 }
-
 
 int mcs6000_ts_ioctl_down(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
 {
@@ -1127,6 +1127,6 @@ static void __exit mcs6000_ts_exit(void)
 module_init(mcs6000_ts_init);
 module_exit(mcs6000_ts_exit);
 
-MODULE_AUTHOR("Kenobi Lee");
+MODULE_AUTHOR("Gerson Barreiros");
 MODULE_DESCRIPTION("MELFAS MCS6000 Touchscreen Driver");
 MODULE_LICENSE("GPL");
