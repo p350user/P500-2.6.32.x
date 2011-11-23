@@ -501,7 +501,7 @@ static void acpuclk_set_div(const struct clkctl_acpu_speed *hunt_s)
 	reg_clksel ^= 1;
 	writel(reg_clksel, A11S_CLK_SEL_ADDR);
 
-	// Recover from overclocking
+	//Recover from overclocking
 	//if(hunt_s->pll==0 && hunt_s->a11clk_khz<=600000) {
 		// Restore the speed of PLL0
 	//	writel(50, PLLn_L_VAL(0));
