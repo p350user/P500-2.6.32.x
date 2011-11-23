@@ -221,6 +221,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 		x2 = (((read_buf[5] & 0xf0) << 4) | read_buf[6]);
 		y2 = (((read_buf[5] & 0x0f) << 8) | read_buf[7]);
 
+#ifdef CONFIG_AXIS_HACK
 		if ( (canFlipX) && (abs(y1-y2) <= axishack) )
 			{
 				// set flip flag
@@ -248,13 +249,15 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			canFlipX = 1;
 		if(abs(x1-x2) > axishack)
 			canFlipY = 1; 
-
+#endif
 	}
 	else
         {
         	// single touch -> reset flags check on axis inversion workaround
+#ifdef CONFIG_AXIS_HACK
                 canFlipY = canFlipX = 1;
                 flipx = flipy = 0;
+#endif
         }
 
 	if (input_type) {
@@ -271,9 +274,10 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			s_input_type = SINGLE_POINT_TOUCH;				
 		}
 	} else { /* touch released case */
+#ifdef CONFIG_AXIS_HACK
 		canFlipY = canFlipX = 1;
 		flipx = flipy = 0;
-
+#endif
 		if (touch_pressed) {
 			if (s_input_type == MULTI_POINT_TOUCH) {
 				if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
