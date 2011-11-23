@@ -1,6 +1,7 @@
 #
 # General architecture dependent options
 #
+
 config OPROFILE
 	tristate "OProfile system profiling (EXPERIMENTAL)"
 	depends on PROFILING
