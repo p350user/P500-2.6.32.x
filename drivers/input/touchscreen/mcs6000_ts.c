@@ -174,7 +174,11 @@ static __inline void mcs6000_multi_ts_event_touch(int x1, int y1, int x2, int y2
 
 	if (report != 0) {
 		input_sync(ts->input_dev);
-		msleep(2);
+#ifdef CONFIG_GAME_FIX
+		msleep(1);
+#else
+		//msleep(2);
+#endif /* end of CONFIG_GAME_FIX */
 	} else {
 		if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
 			DMSG("Not available touch data x1=%d, y1=%d, x2=%d, y2=%d\n", x1, y1, x2, y2);
@@ -252,6 +256,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	/* read the registers of MCS6000 IC */
 	if (i2c_smbus_read_i2c_block_data(ts->client, MCS6000_TS_INPUT_INFO, READ_NUM, read_buf) < 0) {
 		printk(KERN_ERR "%s touch ic read error\n", __FUNCTION__);
+//		msleep(2); //Disable for gamelagfix
 		goto touch_retry;
 	}
 
@@ -1303,6 +1308,6 @@ static void __exit mcs6000_ts_exit(void)
 module_init(mcs6000_ts_init);
 module_exit(mcs6000_ts_exit);
 
-MODULE_AUTHOR("Kenobi Lee");
+MODULE_AUTHOR("Gerson Barreiros");
 MODULE_DESCRIPTION("MELFAS MCS6000 Touchscreen Driver");
 MODULE_LICENSE("GPL");
