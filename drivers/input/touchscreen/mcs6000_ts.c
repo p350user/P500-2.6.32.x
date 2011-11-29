@@ -53,7 +53,7 @@ struct vreg {
 
 static void mcs6000_early_suspend(struct early_suspend *h);
 static void mcs6000_late_resume(struct early_suspend *h);
-#endif
+#endif /* end of CONFIG_HAS_EARLYSUSPEND */
 
 #define LG_FW_MULTI_TOUCH
 #define MCS6000_I2C_TS_NAME		"touch_mcs6000"
@@ -108,7 +108,7 @@ struct mcs6000_ts_data {
 	int poll_interval;
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	struct early_suspend early_suspend;
-#endif
+#endif /* end of CONFIG_HAS_EARLYSUSPEND */
 };
 
 static struct mcs6000_ts_data *mcs6000_ext_ts = (void *)NULL; 
@@ -175,9 +175,8 @@ static __inline void mcs6000_multi_ts_event_touch(int x1, int y1, int x2, int y2
 	if (report != 0) {
 		input_sync(ts->input_dev);
 #ifdef CONFIG_GAME_FIX
-		msleep(1);
+		msleep(1); //30% cpu with sttutering on browser
 #else
-		//msleep(2);
 #endif /* end of CONFIG_GAME_FIX */
 	} else {
 		if (MCS6000_DM_TRACE_YES & mcs6000_debug_mask)
@@ -234,13 +233,15 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	int x2 = 0, y2 = 0;
 	static int pre_x1, pre_x2, pre_y1, pre_y2;
 	static unsigned int s_input_type = NON_TOUCHED_STATE;
+#ifdef CONFIG_AXIS_HACK
 	static int flipy=0;
 	static int flipx=0;
 	static int canFlipX=1;
 	static int canFlipY=1;
 	static int axishack=100;
+#endif /* end of CONFIG_AXIS_HACK */
 
-#endif
+#endif /* end of LG_FW_MULTITOUCH */
 	unsigned int input_type;
 	unsigned char read_buf[READ_NUM];
 
@@ -256,7 +257,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	/* read the registers of MCS6000 IC */
 	if (i2c_smbus_read_i2c_block_data(ts->client, MCS6000_TS_INPUT_INFO, READ_NUM, read_buf) < 0) {
 		printk(KERN_ERR "%s touch ic read error\n", __FUNCTION__);
-//		msleep(2); //Disable for gamelagfix
+//		msleep(1); //fserve hack no changes at all!
 		goto touch_retry;
 	}
 
@@ -302,16 +303,15 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 			canFlipY = 1; 
 #endif /* end of CONFIG_AXIS_HACK */
 	}
-#endif
-	else
-        {
-        	// single touch -> reset flags check on axis inversion workaround
+#endif /* end of LG_FW_MULTI_TOUCH */
 #ifdef CONFIG_AXIS_HACK
+	else
+	{
+		// single touch -> reset flags check on axis inversion workaround
                 canFlipY = canFlipX = 1;
                 flipx = flipy = 0;
+	}
 #endif /* end of CONFIG_AXIS_HACK */
-        }
-
 	if (input_type) {
 		touch_pressed = 1;
 
@@ -330,7 +330,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 		if (input_type == SINGLE_POINT_TOUCH) {
 			mcs6000_single_ts_event_touch(x1, y1, PRESSED, ts);
 		}
-#endif
+#endif /* end of LG_FW_MULTITOUCH */
 
 	} else { /* touch released case */
 #ifdef CONFIG_AXIS_HACK
@@ -358,13 +358,14 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 
 			mcs6000_single_ts_event_touch (x1, y1, RELEASED, ts);
 			touch_pressed = 0;
-#endif
+#endif /* end of LG_FW_MULTITOUCH */
 		}
 	}
 
 touch_retry:
 	if (ts->pendown) {
 		queue_delayed_work(mcs6000_wq, &ts->work, msecs_to_jiffies(ts->poll_interval));
+		//msleep(1); 50% cpu. no stuttering in browser.
 	}
 	else {
 		enable_irq(ts->num_irq);
@@ -605,7 +606,7 @@ int mcs6000_ts_ioctl_down(struct inode *inode, struct file *file, unsigned int c
 			err = -EINVAL;
 			break;
 	}
-#endif
+#endif /* end of 0 */
 
 	if (err < 0)
 		printk(KERN_ERR "\n==== Touch DONW IOCTL Fail....%d\n",_IOC_NR(cmd));
@@ -1065,14 +1066,14 @@ static int mcs6000_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	set_bit(ABS_MT_POSITION_Y, ts->input_dev->absbit);
 #else
 	set_bit(BTN_TOUCH, ts->input_dev->keybit);
-#endif
+#endif /* end of LG_FW_MULTITOUCH */
 #ifdef LG_FW_MULTI_TOUCH
 	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_X, pdata->ts_x_min, pdata->ts_x_max, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_MT_POSITION_Y, pdata->ts_y_min, pdata->ts_y_max, 0, 0);
 #else	
 	input_set_abs_params(ts->input_dev, ABS_X, pdata->ts_x_min, pdata->ts_x_max, 0, 0);
 	input_set_abs_params(ts->input_dev, ABS_Y, pdata->ts_y_min, pdata->ts_y_max, 0, 0);
-#endif
+#endif /* end of LG_FW_MULTITOUCH */
 
 	ret = input_register_device(ts->input_dev);
 	if (ret < 0) {
@@ -1127,7 +1128,7 @@ static int mcs6000_ts_probe(struct i2c_client *client, const struct i2c_device_i
 	//	ts->early_suspend.level		= EARLY_SUSPEND_LEVEL_BLANK_SCREEN +1 ;
 	ts->early_suspend.level		= EARLY_SUSPEND_LEVEL_DISABLE_FB - 5;
 	register_early_suspend(&ts->early_suspend);
-#endif
+#endif /* end of CONFIG_HAS_EARLYSUSPEND */
 
 	mcs6000_ext_ts = ts;
 
@@ -1165,7 +1166,7 @@ static int mcs6000_ts_remove(struct i2c_client *client)
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	unregister_early_suspend(&ts->early_suspend);
-#endif
+#endif /* end of CONFIG_HAS_EARLYSUSPEND */
 
 	free_irq(client->irq, ts);
 	input_unregister_device(ts->input_dev);
@@ -1269,7 +1270,7 @@ static void mcs6000_late_resume(struct early_suspend * h)
 	if (ts->status == MCS6000_DEV_SUSPEND)
 		mcs6000_ts_resume(ts->client);
 }
-#endif
+#endif /* end of CONFIG_HAS_EARLYSUSPEND */
 
 static const struct i2c_device_id mcs6000_ts_id[] = {
 	{ MCS6000_I2C_TS_NAME, 1 },	
@@ -1282,7 +1283,7 @@ static struct i2c_driver mcs6000_ts_driver = {
 #ifndef CONFIG_HAS_EARLYSUSPEND
 	.suspend 	= mcs6000_ts_suspend,
 	.resume  	= mcs6000_ts_resume,
-#endif
+#endif /* end of CONFIG_HAS_EARLYSUSPEND */
 	.id_table 	= mcs6000_ts_id,
 	.driver = {
 		.name 	= MCS6000_I2C_TS_NAME,
