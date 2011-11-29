@@ -176,6 +176,7 @@ static __inline void mcs6000_multi_ts_event_touch(int x1, int y1, int x2, int y2
 		input_sync(ts->input_dev);
 #ifdef CONFIG_GAME_FIX
 		msleep(1); //30% cpu with sttutering on browser
+		//usleep_range(20000, 20000);
 #else
 #endif /* end of CONFIG_GAME_FIX */
 	} else {
@@ -257,7 +258,6 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 	/* read the registers of MCS6000 IC */
 	if (i2c_smbus_read_i2c_block_data(ts->client, MCS6000_TS_INPUT_INFO, READ_NUM, read_buf) < 0) {
 		printk(KERN_ERR "%s touch ic read error\n", __FUNCTION__);
-//		msleep(1); //fserve hack no changes at all!
 		goto touch_retry;
 	}
 
@@ -365,7 +365,11 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 touch_retry:
 	if (ts->pendown) {
 		queue_delayed_work(mcs6000_wq, &ts->work, msecs_to_jiffies(ts->poll_interval));
-		//msleep(1); 50% cpu. no stuttering in browser.
+#ifdef CONFIG_GAME_FIX
+#else
+		msleep(1); //50% cpu. no stuttering in browser.
+		//usleep_range(20000, 20000);
+#endif /* end of CONFIG_GAME_FIX */
 	}
 	else {
 		enable_irq(ts->num_irq);

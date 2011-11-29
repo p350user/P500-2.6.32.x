@@ -15,6 +15,8 @@
 #include <linux/buffer_head.h>
 #include "internal.h"
 
+#define __O_SYNC        020000000
+
 #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
 			SYNC_FILE_RANGE_WAIT_AFTER)
 
@@ -267,7 +269,7 @@ static int do_fsync(unsigned int fd, int datasync)
  */
 int vfs_fsync(struct file *file, struct dentry *dentry, int datasync)
 {
-	return vfs_fsync_range(file, dentry, 0, LLONG_MAX, datasync);
+	return vfs_fsync_range(file, 0, LLONG_MAX, datasync);
 }
 EXPORT_SYMBOL(vfs_fsync);
 
@@ -293,8 +295,8 @@ int generic_write_sync(struct file *file, loff_t pos, loff_t count)
 {
 	if (!(file->f_flags & O_SYNC) && !IS_SYNC(file->f_mapping->host))
 		return 0;
-	return vfs_fsync_range(file, file->f_path.dentry, pos,
-			       pos + count - 1, 1);
+
+	return vfs_fsync_range(file, pos, pos + count - 1, (file->f_flags & __O_SYNC) ? 0 : 1);
 }
 EXPORT_SYMBOL(generic_write_sync);
 
