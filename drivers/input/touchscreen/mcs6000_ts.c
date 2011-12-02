@@ -174,8 +174,9 @@ static __inline void mcs6000_multi_ts_event_touch(int x1, int y1, int x2, int y2
 
 	if (report != 0) {
 		input_sync(ts->input_dev);
-#ifdef CONFIG_GAME_FIX //~30% cpu with sttutering on browser
-		usleep_range(20000, 20000);
+#ifdef CONFIG_GAME_FIX
+		msleep(1); //30% cpu with sttutering on browser
+		//usleep_range(20000, 20000);
 #else
 #endif /* end of CONFIG_GAME_FIX */
 	} else {
@@ -365,8 +366,9 @@ touch_retry:
 	if (ts->pendown) {
 		queue_delayed_work(mcs6000_wq, &ts->work, msecs_to_jiffies(ts->poll_interval));
 #ifdef CONFIG_GAME_FIX
-#else //~50% cpu. no stuttering in browser.
-		usleep_range(20000, 20000);
+#else
+		msleep(1); //50% cpu. no stuttering in browser.
+		//usleep_range(20000, 20000);
 #endif /* end of CONFIG_GAME_FIX */
 	}
 	else {
