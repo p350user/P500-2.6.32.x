@@ -364,10 +364,7 @@ static void mcs6000_ts_work_func(struct work_struct *work)
 touch_retry:
 	if (ts->pendown) {
 		queue_delayed_work(mcs6000_wq, &ts->work, msecs_to_jiffies(ts->poll_interval));
-#ifdef CONFIG_GAME_FIX
-#else //50% cpu. no stuttering in browser.
 		usleep_range(20000, 20000);
-#endif /* end of CONFIG_GAME_FIX */
 	}
 	else {
 		enable_irq(ts->num_irq);
